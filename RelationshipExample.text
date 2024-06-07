@@ -1,0 +1,30 @@
+ $query = PlatformOrderShipment::with('platformOrder', 'platformShipment:id,shipment_id,order_id,shipment_sequence_number,platform_order_id')->select('id', 'user_id', 'platform_id', 'user_integration_id', 'shipment_id', 'sync_status', 'tracking_info', 'realease_date', 'platform_order_id', 'order_id', 'shipping_method', 'linked_id', 'carrier_code', 'tracking_url', 'weight', 'boxes', 'shipment_sequence_number as ship_shipment_sequence_number', 'ship_class');
+
+ $query = PlatformOrder::with(['getShipmentReadyAndFailed'])->select('id', 'user_id', 'platform_id', 'user_integration_id', 'user_workflow_rule_id', 'platform_customer_id', 'order_type', 'api_order_id', 'order_number', 'sync_status', 'is_voided', 'is_deleted', 'linked_id', 'order_updated_at', 'updated_at', 'warehouse_id', 'attempt');
+
+
+ $resultObj = PlatformObject::with([
+            'platformDataMapping' => function ($mapQuery) use ($user_integration_id) {
+                $mapQuery->with([
+                    'platformField' => function ($fieldQuery) use ($user_integration_id) {
+                        $fieldQuery->whereIn('user_integration_id', [0, $user_integration_id]);
+                    },
+                ])->where('user_integration_id', $user_integration_id);
+            },
+        ])->where('name', $object_name)->first()->toArray();
+
+
+$query = PlatformOrder::with(['platformOrderAddress', 'getShipmentReadyAndFailed'])->select('id', 'api_order_id', 'order_number', 'order_date', 'notes', 'linked_id', 'attempt');
+
+
+ $invoiceArr = PlatformInvoice::with( 'platformCustomer', 'platformOrderAdditionalInformation' )
+                            ->where([
+                                'user_id' => $user_id,
+                                'platform_id' => $source_platform_id,
+                                // 'sync_status' => PlatformStatus::READY,
+                            ])
+                            ->whereIn( 'sync_status', [PlatformStatus::PENDING, PlatformStatus::READY ] )
+                            ->where( 'due_amt', '!=', 0 )
+                            ->offset($offset)
+                            ->limit($pagesize)
+                            ->get();
